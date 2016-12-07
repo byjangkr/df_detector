@@ -1,12 +1,12 @@
 
 
-## for VAD - webrtcvad
+## for VAD
 # https://pypi.python.org/pypi/webrtcvad
 # pip install webrtcvad
 
 
 
-## for extracting acoustic features (MFCC, PLP) - python_speech_features or kaldi
+## for extracting MFCC
 # https://pypi.python.org/pypi/python_speech_features
 # pip install python_speech_features
 #                or

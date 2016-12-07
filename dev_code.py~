@@ -87,7 +87,7 @@ img = (simmat - numpy.min(simmat))/(numpy.max(simmat) - numpy.min(simmat))
 img = 1 - img
 
 # thresholding image to 0 or 1
-thr = 0.8 # for prolongation
+thr = 0.9 # for prolongation
 img = image_thresholding(img,thr)
 
 plt.imshow(img, cmap='gray')
