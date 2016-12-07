@@ -18,8 +18,8 @@ parser.add_argument("wav_file",help="input wave file name")
 args=parser.parse_args()
 
 # VAD
-(vad_data,vad_index,wav_data) = vadwav.run(args.wav_file)
-#vadwav.plotvad(vad_data,vad_index,wav_data)
+(vad_data,vad_index,wav_data,sf) = vadwav.run(args.wav_file)
+vadwav.plotvad(vad_data,vad_index,wav_data)
 
 # developing ...
 
@@ -64,7 +64,7 @@ def image_thresholding(img,threshold=0.9):
 no_data = (vad_data - numpy.mean(vad_data))/numpy.std(vad_data)
 no_data = numpy.array(no_data)
 
-mfcc_feat = mfcc(no_data,16000) # frame_win_size = 0.025, frame_win_step = 0.01
+mfcc_feat = mfcc(no_data,sf) # frame_win_size = 0.025, frame_win_step = 0.01
 #fbank_feat = logfbank(data,16000)
 
 seg_win_size = 200 # frame*10 (ms)

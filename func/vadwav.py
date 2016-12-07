@@ -64,13 +64,15 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	# wav_file : path of wav file
 	# vad_aggressive=0 # 0~3 (least ~ most agrressive)
 	# frame_duration = 10 # (ms)
-	# sample_rate = 16000 # sample_rate must be 16k
+	# sample_rate = 16000 # sample_rate must be 8k, 16k, 32k
+			      # because a frame must be either 10, 20, or 30 ms in duration
 	# padding_duration = 50 # (ms) vad padding duration
 	
 	# read wave data
 	(sf, wav_data) = wavfile.read(wav_file)
-	if sf != 16000:
-	  print 'error!!! sample rate of wav is not 16000Hz'
+	if sf != 16000 or sf != 8000 or sf != 32000:
+	  print 'error!!! sample rate of wav is not 8k, 16k, or 32kHz'
+	  print 'the sample rate of this file is %d' % (sf)
 	  raise
 
 	# VAD
@@ -88,7 +90,7 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	    vad_data.extend(frame)
 	print 'done'
 	ori_data = wav_data
-	return (vad_data, vad_index, ori_data)
+	return (vad_data, vad_index, ori_data, sf)
 
 def plotvad(vad_data,vad_index,wav_data):
 	# VAD index padding with length of wav data
