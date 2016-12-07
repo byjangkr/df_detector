@@ -64,7 +64,7 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	# wav_file : path of wav file
 	# vad_aggressive=0 # 0~3 (least ~ most agrressive)
 	# frame_duration = 10 # (ms)
-	# sample_rate = 16000 # sample_rate must is 16k
+	# sample_rate = 16000 # sample_rate must be 16k
 	# padding_duration = 50 # (ms) vad padding duration
 	
 	# read wave data
