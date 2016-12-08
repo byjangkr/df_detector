@@ -70,7 +70,7 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	
 	# read wave data
 	(sf, wav_data) = wavfile.read(wav_file)
-	if sf != 16000 or sf != 8000 or sf != 32000:
+	if sf != 16000 and sf != 8000 and sf != 32000:
 	  print 'error!!! sample rate of wav is not 8k, 16k, or 32kHz'
 	  print 'the sample rate of this file is %d' % (sf)
 	  raise

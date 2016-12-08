@@ -19,7 +19,7 @@ args=parser.parse_args()
 
 # VAD
 (vad_data,vad_index,wav_data,sf) = vadwav.run(args.wav_file)
-vadwav.plotvad(vad_data,vad_index,wav_data)
+#vadwav.plotvad(vad_data,vad_index,wav_data)
 
 # developing ...
 
@@ -34,7 +34,7 @@ def segment_generator(data,win_size,win_step):
 def compute_similarity(x,method='xcorr'):
   (nframe,nfeat) = x.shape
   print 'no. of frames : %d / no. of features : %d' %(nframe,nfeat)
-  print 'compute similarity ...'
+  print 'compute similarity using %s' % (method)
 
   simmat = numpy.zeros((nframe,nframe))
   for i in range(nframe):
@@ -60,6 +60,15 @@ def image_thresholding(img,threshold=0.9):
   img_[img<thr] = 0
   return img_
 
+def remain_digncomp(img):
+
+  img_ = numpy.zeros(img.shape)
+  for digpnt in range(img.shape[0]):
+    img_[digpnt,digpnt] = 1
+
+  return img_
+    
+
 # normalize zero mean and unit variance
 no_data = (vad_data - numpy.mean(vad_data))/numpy.std(vad_data)
 no_data = numpy.array(no_data)
@@ -71,13 +80,14 @@ seg_win_size = 200 # frame*10 (ms)
 seg_win_step = seg_win_size/2 # frame*10 (ms)
 
 segments = segment_generator(mfcc_feat,seg_win_size,seg_win_step)
-
-seg_feat = mfcc_feat[300:300+seg_win_size]
+print len(no_data)
+offset = 0
+seg_feat = mfcc_feat[offset:offset+seg_win_size]
 
 data1 = seg_feat[0]
 data2 = seg_feat[1]
 
-simmat = compute_similarity(seg_feat,'eucl')
+simmat = compute_similarity(seg_feat,'xcorr')
 
 # normalize data to 0-1 range
 # x_ = (x - min(x))/(max(x) - min(x))
@@ -87,10 +97,17 @@ img = (simmat - numpy.min(simmat))/(numpy.max(simmat) - numpy.min(simmat))
 img = 1 - img
 
 # thresholding image to 0 or 1
-thr = 0.8 # for prolongation
+thr = 0.9 # for prolongation
 img = image_thresholding(img,thr)
 
+# remain digonal connected-component
+img2 = remain_digncomp(img)
+
+plt.figure(1)
+plt.subplot(121)
 plt.imshow(img, cmap='gray')
+plt.subplot(122)
+plt.imshow(img2, cmap='gray')
 plt.show()
 
 
