@@ -70,10 +70,10 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	
 	# read wave data
 	(sf, wav_data) = wavfile.read(wav_file)
-	if sf != 16000 or sf != 8000 or sf != 32000:
+	if sf != 16000 and sf != 8000 and sf != 32000:
 	  print 'error!!! sample rate of wav is not 8k, 16k, or 32kHz'
 	  print 'the sample rate of this file is %d' % (sf)
-	  raise
+	  raise	
 
 	# VAD
 	vad = webrtcvad.Vad()
@@ -89,6 +89,10 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	  for frame in segment:
 	    vad_data.extend(frame)
 	print 'done'
+
+	# convert to range : -32768 ~ 32767 -> -1 ~ 1
+	vad_data = numpy.array(vad_data)/float(2**15-1)
+
 	ori_data = wav_data
 	return (vad_data, vad_index, ori_data, sf)
 
@@ -99,16 +103,14 @@ def plotvad(vad_data,vad_index,wav_data):
 	  vad_index.extend(scipy.zeros(pad_size))
 
 	# normalizing
-	no_data = (wav_data - numpy.mean(wav_data))/numpy.std(wav_data)
-	vad_index = numpy.array(vad_index)*int(8)
+	no_data = wav_data/float(2**15) # range -1 ~ 1
+	vad_index = numpy.array(vad_index)*max(no_data)
 
 	# plot wav and VAD index
 	plt.figure(1)
 	plt.title('Signal wave and vad index...')
 	plt.plot(no_data)
 	plt.plot(vad_index,color="red")
-
-	plt.ylim([-7,9])
 	plt.show()
 
 
