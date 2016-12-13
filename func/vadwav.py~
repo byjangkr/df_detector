@@ -69,12 +69,14 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	# padding_duration = 50 # (ms) vad padding duration
 	
 	# read wave data
+	print 'read wav file : ', wav_file
 	(sf, wav_data) = wavfile.read(wav_file)
 	if sf != 16000 and sf != 8000 and sf != 32000:
 	  print 'error!!! sample rate of wav is not 8k, 16k, or 32kHz'
 	  print 'the sample rate of this file is %d' % (sf)
 	  raise	
 
+	print 'processing VAD ...'
 	# VAD
 	vad = webrtcvad.Vad()
 	vad.set_mode(vad_aggressive)
@@ -96,21 +98,21 @@ def run(wav_file,vad_aggressive=0,frame_duration=10,padding_duration=50):
 	ori_data = wav_data
 	return (vad_data, vad_index, ori_data, sf)
 
-def plotvad(vad_data,vad_index,wav_data):
+def plotvad(vad_data,vad_index,wav_data,fignum):
 	# VAD index padding with length of wav data
 	if len(vad_index) != len(wav_data) :
 	  pad_size = len(wav_data) - len(vad_index)
 	  vad_index.extend(scipy.zeros(pad_size))
 
 	# normalizing
-	no_data = wav_data/float(2**15) # range -1 ~ 1
+	no_data = wav_data/float(2**15-1) # range -1 ~ 1
 	vad_index = numpy.array(vad_index)*max(no_data)
 
 	# plot wav and VAD index
-	plt.figure(1)
+	plt.figure(fignum)
 	plt.title('Signal wave and vad index...')
 	plt.plot(no_data)
 	plt.plot(vad_index,color="red")
-	plt.show()
+	#plt.show()
 
 

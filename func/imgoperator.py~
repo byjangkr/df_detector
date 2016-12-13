@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 import numpy
 from scipy.ndimage import morphology as morp
-from scipy.ndimage.filters import maximum_filter as maxpool
-from scipy.ndimage import convolve
+from scipy import ndimage
 
 def thresholding(img,threshold=0.9):
-  if numpy.max(img)!=1 or numpy.min(img)!=0:
+  if numpy.max(img) > 1 or numpy.min(img) < 0:
     print 'warning!!! image can be distorted becuase the range of image is not 0~1'
   
   img_ = numpy.copy(img)
@@ -52,14 +51,33 @@ def opening(img,sqaure_size):
   img_ = morp.binary_opening(img,structure=numpy.ones((sqaure_size,sqaure_size))).astype(int)
   return img_
 
-def maxpooling(img,sqaure_size):
+def eliminate_comp(img,sqaure_size):
   n = sqaure_size
-  #mask = numpy.ones((n+2,n+2))
-  #mask[1:n+1,1:n+1] = 0
-  mask = numpy.zeros((n,n))
-  mask[n-1,n-1] = 1
-  #img_ = (img == maxpool(img,footprint=mask))
-  img_ = convolve(img,mask,mode='constant',cval=0.0)
+  label_im, nb_labels = ndimage.label(img)
+  sizes = ndimage.sum(img, label_im, range(nb_labels + 1))
+  mask_size = sizes < n*n
+  remove_pixel = mask_size[label_im]
+  label_im[remove_pixel] = 0
+  img_ = numpy.copy(label_im)
   img_[img_>0] = 1
+
   return img_
+
+def remain_sylrepcomp(img,repsize):
+  uptrimat = numpy.triu(numpy.ones(img.shape))
+  rm_dig_img = img * uptrimat
+  label_im, nb_labels = ndimage.label(rm_dig_img)
+  
+  for lab in numpy.arange(1,nb_labels+1):
+    findob = ndimage.find_objects(label_im==lab)
+    if findob:
+      slice_x, slice_y = ndimage.find_objects(label_im==lab)[0]
+      comp_im = label_im[slice_x, slice_y]
+      if comp_im.shape[0] < repsize or comp_im.shape[1] < repsize:
+        label_im[slice_x,slice_y] = 0
+
+  img_ = numpy.copy(label_im)
+  img_[img_>1] = 1
+  return img_
+
     
