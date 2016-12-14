@@ -140,6 +140,11 @@ parser.add_argument("--fmethod",action='store',default='mfcc',help="the METHOD o
 parser.add_argument("--smethod",action='store',default='xcorr',help="the METHOD of computing similarity matrix : xcorr (default), eucl")
 parser.add_argument("-t",dest="thr",default=0.9,type=float,help="threshold for binarization of image(default=0.9)")
 
+# for VAD
+vad_parser = parser.add_argument_group('VAD option')
+vad_parser.add_argument("-a",dest="vad_agg",default=0,type=int,help="VAD aggressive number 0~3 (default=0)")
+vad_parser.add_argument("-p",dest="vad_pad",default=50,type=int,help="padding duration of frame for VAD (default=50)")
+
 # for prolongation
 pro_parser = parser.add_argument_group('Prolongation option')
 pro_parser.add_argument("-c",dest="clssqr",default=5,type=int,help="the size of square matrix for closing (default=5)")
@@ -167,6 +172,9 @@ rep_plot = args.rplot
 fmethod = args.fmethod
 smethod = args.smethod
 
+vad_agg = args.vad_agg
+vad_pad = args.vad_pad
+
 thr_pro = args.thr # threshold for binarization
 clssqr = args.clssqr # the size of square matrix for closing
 opnsqr = args.opnsqr # the size of square matrix for opening
@@ -176,7 +184,7 @@ repsize = args.rsize # minimum size for repetition (repsize*10 ms)
 elisize = args.esize # elimination small component n*n
 
 # VAD
-(vad_data,vad_index,wav_data,sf) = vadwav.run(args.wav_file)
+(vad_data,vad_index,wav_data,sf) = vadwav.run(args.wav_file,vad_agg,10,vad_pad)
 if vplot:
   fignum += 1
   vadwav.plotvad(vad_data,vad_index,wav_data,fignum) # plot the result of VAD
@@ -215,14 +223,8 @@ if vplot or rep_plot or pro_plot:
   plt.show()
 
 ## save data
-dfio.saveprorepimg(out_file,img_pro,img_rep)
-pro_img, rep_img = dfio.loadprorepimg(out_file)
+dfio.saveprorepimg(args.out_file,img_pro,img_rep)
 
-plt.figure(fignum + 1)
-plt.subplot(121)
-plt.imshow(pro_img)
-plt.subplot(122)
-plt.imshow(rep_img)
 
 
 

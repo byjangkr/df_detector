@@ -214,11 +214,10 @@ img_rep= improc_rep(img_r,thr_rep,elisize,repsize,rep_plot)
 if vplot or rep_plot or pro_plot:
   plt.show()
 
-out_pro = args.out_file[:] + '_pro'
-out_rep = args.out_file[:] + '_rep'
-
 ## save data
-#dfio.saveprorepimg(out_file,img_pro,img_rep)
+dfio.saveprorepimg(args.out_file,img_pro,img_rep)
+
+
 
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import numpy
 import pickle
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 def saveprorepimg(out_file,img_pro,img_rep):
@@ -48,7 +48,19 @@ def loadprorepimg(in_file):
   rep_img = numpy.zeros((img_size*img_size,1))
   pro_img[pro_data] = 1
   rep_img[rep_data] = 1
-  return numpy.reshape(pro_img,(img_size,img_size)), numpy.reshape(rep_img,(img_size,img_size))  
+  return numpy.reshape(pro_img,(img_size,img_size)), numpy.reshape(rep_img,(img_size,img_size)) 
+
+def plotprorepimg(in_file):
+  pro_img, rep_img = loadprorepimg(in_file)
+  plt.figure(1)
+  plt.subplot(121)
+  plt.title('Prolongation')
+  plt.imshow(pro_img,cmap='gray')
+
+  plt.subplot(122)
+  plt.title('Repetition')
+  plt.imshow(rep_img,cmap='gray')
+  plt.show() 
 
 
 
