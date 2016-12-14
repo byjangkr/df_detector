@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# this script is writed by byjang 2016.12.14
 # Reference
 # [1] I. Esmaili, N.J. Dabanloo, M. Vali, "Automatic classification of speech dysfluencies in continuous speech based on similarity measures and morphological image processing tools", Biomedical Signal Processing and Control, 23, 104-114, 2016
 
@@ -15,6 +16,7 @@ import scipy.misc
 
 from func import vadwav
 from func import imgoperator as imop
+from func import dfio
 
 def compute_similarity(x,method='xcorr'):
   # create the square matrix of distance between each frame of self
@@ -212,20 +214,16 @@ img_rep= improc_rep(img_r,thr_rep,elisize,repsize,rep_plot)
 if vplot or rep_plot or pro_plot:
   plt.show()
 
-out_pro = args.out_file[:] + '_pro'
-out_rep = args.out_file[:] + '_rep'
-
 ## save data
-_img = numpy.copy(img_pro)
-savlist = []
-imsize = _img.shape[0]
-_img = numpy.reshape(1,imsize*imsize)
-d_index = _img>0
-print d_index
+dfio.saveprorepimg(out_file,img_pro,img_rep)
+pro_img, rep_img = dfio.loadprorepimg(out_file)
 
-#with open(out_pro,'w') as f :
-#  print 'write the result of prolongation ->', out_pro
-#  f.write(img_pro)
+plt.figure(fignum + 1)
+plt.subplot(121)
+plt.imshow(pro_img)
+plt.subplot(122)
+plt.imshow(rep_img)
+
 
 
 
