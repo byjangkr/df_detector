@@ -2,14 +2,17 @@
 
 
 #wav_file=sample_data/F_0101_13y1m_1_dys_part.wav
-wav_file=sample_data/F_0101_13y1m_1_dys_part_16k.wav
+#wav_file=sample_data/F_0101_13y1m_1_dys_part_16k.wav
 #wav_file=sample_data/F_1_KSM_04.wav
+wav_file=sample_data/F_1_KSM_03_c1.wav
 
 dsf_file=$(echo $wav_file | sed 's#sample_data#dsf#g' | sed 's#.wav#.dsf#g')
-echo $dsf_file
-#ext_prorep_imgproc.py -t 0.85 $wav_file $dsf_file
-#temp_code.py $dsf_file
-: << 'IMG'
+
+ext_prorep_imgproc.py -t 0.9 -a 3 -p 30 -o 30 -r 15 $wav_file $dsf_file
+#ext_prorep_imgproc.py -t 0.9 -a 3 -p 30 -o 30 -r 10 $wav_file $dsf_file
+temp_code.py $dsf_file
+
+: << 'END'
 usage: ext_prorep_imgproc.py [-h] [--fmethod FMETHOD] [--smethod SMETHOD]
                              [-t THR] [-a VAD_AGG] [-p VAD_PAD] [-c CLSSQR]
                              [-o OPNSQR] [-r RSIZE] [-e ESIZE] [--vad-plot]
@@ -45,5 +48,5 @@ Plot option:
   --vad-plot         plot the result of VAD (default=Flase)
   --pro-plot         plot the image processing of prolongation (default=Flase)
   --rep-plot         plot the image processing of repetition (default=Flase)
-IMG
+END
 
