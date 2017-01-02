@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 
 import argparse
-from func import dfio
+import dfio
+import pickle
 
 import numpy
 from scipy import ndimage
-import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
-parser.add_argument("dsf_file",help="input dsf file name")
+parser.add_argument("dsf_img_file",help="input dsfimg file name")
+parser.add_argument("-m",dest="outmode",action='store',default='outscreen',help="the mode of output : outscreen (default), pckout, txtappend")
+parser.add_argument("-o",dest="outfile",action='store',help="the output file name for pckout or txtappend of outmode")
 args=parser.parse_args()
-#dsf_file = 'dsf/F_1_KSM_03_r4.dsf'
-
-#dfio.plotprorepimg(args.dsf_file)
 
 rep_margin = 300 # rep_margin*10ms
-pro_img, rep_img = dfio.loadprorepimg(args.dsf_file)
+pro_img, rep_img = dfio.loadprorepimg(args.dsf_img_file,1)
 img_size = rep_img.shape
 total_dur = img_size[0]*0.01
 
@@ -55,11 +54,42 @@ for lab in numpy.arange(1,nb_labels+1):
     
     rep_dur_ary[lab-1] = rep_dur
 
-if not rep_dur_ary :
-  rep_dur_ary = 0
-lenRP = numpy.mean(rep_dur_ary) # mean length of repetition
-numRP = nb_labels # number of repetition
-RPR = numpy.sum(rep_dur_ary)/total_dur # repetition rate (not smoothed)
+if not rep_dur_ary.any() :
+  lenRP = 0 # mean length of repetition
+  numRP = 0 # number of repetition
+  RPR = 0 # repetition rate (not smoothed)
+else :
+  lenRP = numpy.mean(rep_dur_ary) # mean length of repetition
+  numRP = nb_labels # number of repetition
+  RPR = numpy.sum(rep_dur_ary)/total_dur # repetition rate (not smoothed)
+
+feat = numpy.array([lenPR, numPR, PRR, lenRP, numRP, RPR]) 
+
+outmode = args.outmode
+outfile = args.outfile
+if outmode == 'outscreen' :
+  for x in feat :
+    print '%0.3f' % (x),
+elif outmode == 'pckout' :
+  if not outfile :
+    print "error!!! check outmode or output file name"
+    raise
+  
+  pck = open(outfile,'wb')
+  pickle.dump(feat,pck)
+  pck.close()
+
+elif outmode == 'txtappend' :
+  if not outfile :
+    print "error!!! check outmode or output file name"
+    raise 
+
+  f = open(outfile,'a')
+  f.write('\n')
+  f.write('%s ' % (args.dsf_img_file))
+  for s in feat :
+    f.write('%0.3f' % (s))
+  f.close()
 
 
 

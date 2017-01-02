@@ -5,17 +5,14 @@ from func import dfio
 
 import numpy
 from scipy import ndimage
-import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
+parser.add_argument("dsf_img_file",help="input dsf file name")
 parser.add_argument("dsf_file",help="input dsf file name")
 args=parser.parse_args()
-#dsf_file = 'dsf/F_1_KSM_03_r4.dsf'
-
-#dfio.plotprorepimg(args.dsf_file)
 
 rep_margin = 300 # rep_margin*10ms
-pro_img, rep_img = dfio.loadprorepimg(args.dsf_file)
+pro_img, rep_img = dfio.loadprorepimg(args.dsf_img_file)
 img_size = rep_img.shape
 total_dur = img_size[0]*0.01
 

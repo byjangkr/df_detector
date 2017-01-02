@@ -28,13 +28,15 @@ def saveprorepimg(out_file,img_pro,img_rep):
 
   pck = open(out_file,'wb')
   pickle.dump(out_data,pck)
+  pck.close()
 
-def loadprorepimg(in_file):
+def loadprorepimg(in_file,pause=0):
   # format(tuple) : [img_pro_size array(pro_data) array(rep_data)] 
   # img_pro_size = output[0]
   # array(pro_data) = output[1]
   # array(rep_data) = output[2]
-  print "load prolongation and reptition image ->", in_file
+  if not pause :
+    print "load prolongation and reptition image ->", in_file
   pck = open(in_file,'rb')
   load_data = pickle.load(pck)
   img_size = int(load_data[0])
@@ -48,6 +50,7 @@ def loadprorepimg(in_file):
   rep_img = numpy.zeros((img_size*img_size,1))
   pro_img[pro_data] = 1
   rep_img[rep_data] = 1
+  pck.close()
   return numpy.reshape(pro_img,(img_size,img_size)), numpy.reshape(rep_img,(img_size,img_size)) 
 
 def plotprorepimg(in_file):

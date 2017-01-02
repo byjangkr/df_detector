@@ -6,8 +6,9 @@ wav_dir=$1
 out_dir=$2
 
 [ -z "$wav_dir" ] && echo "error!! need to wav_directory" && exit 1;
-[ -z "$out_dir" ] && echo "error!! need to output_derectory" && exit 1;
+[ -z "$out_dir" ] && echo "error!! need to output_directory" && exit 1;
 
+cd df_detector
 rm -rf $out_dir
 mkdir $out_dir
 

@@ -48,18 +48,5 @@ Plot option:
   --vad-plot         plot the result of VAD (default=Flase)
   --pro-plot         plot the image processing of prolongation (default=Flase)
   --rep-plot         plot the image processing of repetition (default=Flase)
-
-=====================================================================================
-
-usage: ext_dsffeat_dsfimg.py [-h] [-m OUTMODE] [-o OUTFILE] dsf_img_file
-
-positional arguments:
-  dsf_img_file  input dsfimg file name
-
-optional arguments:
-  -h, --help    show this help message and exit
-  -m OUTMODE    the mode of output : outscreen (default), pckout, txtappend
-  -o OUTFILE    the output file name for pckout or txtappend of outmode
-
 END
 
