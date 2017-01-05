@@ -11,6 +11,7 @@ out_file=$2
 cd df_detector
 find $dsf_img_dir -iname "*.dsf_img" > $dsf_img_dir/dsfimglist.log
 
+rm -f $out_file
 touch $out_file
 
 # output for EST 

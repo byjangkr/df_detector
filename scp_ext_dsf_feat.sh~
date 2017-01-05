@@ -21,9 +21,8 @@ do
   speaker=$(echo $line | sed 's#.*/[FM]*_[0-9]*_\([A-Z]*\)_[0-9]*\.dsf_img#\1#g')
   setnum=$(echo $line | sed 's#.*/[FM]*_\([0-9]*\)_[A-Z]*_[0-9]*\.dsf_img#\1#g')
   tasknum=$(echo $line | sed 's#.*/[FM]*_[0-9]*_[A-Z]*_\([0-9]*\)\.dsf_img#\1#g')
-  echo -n "$speaker $setnum $tasknum "
-  #echo -n "$target_file " >> $out_file
-  #ext_dsffeat_dsfimg.py $dsf_img_file >> $out_file
+  echo -n "$speaker $setnum $tasknum " >> $out_file
+  ext_dsffeat_dsfimg.py $dsf_img_file >> $out_file
 
 done < $dsf_img_dir/dsfimglist.log
 
