@@ -3,6 +3,18 @@ import numpy
 import pickle
 import matplotlib.pyplot as plt
 
+def savepckdata(out_file,data):
+  print "save data -> ", out_file
+  pck = open(out_file,'wb')
+  pickle.dump(data,pck)
+  pck.close()
+
+def loadpckdat(in_file):
+  print "load data -> ", in_file
+  pck = open(in_file,'rb')
+  data = pickle.load(pck)
+  pck.close()
+  return data
 
 def saveprorepimg(out_file,img_pro,img_rep):
   # format(tuple) : [img_pro_size array(pro_data) array(rep_data)] 
