@@ -2,9 +2,9 @@
 
 # temporal segment for experience
 # for M_1_KGT_02.info
-def seg_slice_dsf():
+def seg_slice_dsf(num):
   # disfluencies
-  seg1 = slice(400,600,1)
+  seg1 = slice(200,600,1)
   seg2 = slice(1600,2200,1)
   seg3 = slice(2300,2500,1)
   seg4 = slice(2500,2700,1)
@@ -12,7 +12,7 @@ def seg_slice_dsf():
   seg6 = slice(3900,4100,1)
   seg7 = slice(4900,5100,1)
   segall = [seg1,seg2,seg3,seg4,seg5,seg6,seg7]
-  return segall
+  return segall[num]
 
 def seg_slice_ref():
   # reference (manual tagging)

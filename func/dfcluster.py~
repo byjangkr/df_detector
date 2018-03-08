@@ -3,6 +3,7 @@
 import numpy
 import matplotlib.pyplot as plt
 from func import imgoperator as imop
+import time
 
 #from func import tmp_mysegment as myseg # for my experience
 
@@ -62,18 +63,19 @@ def mdlupdate(tarmdl,inpdf,w):
   return outmdl
 
 def adaptsilmodel(indata,silmdl):
-  print "the silence model adapt to this utterance.." 
   adt_boundary = 3 
   adt_w = 0.9
-  adaptmdl = silmdl[:]
+  adaptmdl = silmdl
   
   for inx in range(len(indata)):
+    idist = 0; imdl = 0
+    tarpdf = []
     tarpdf = indata[inx]
     idist, imdl = multisenonedist(tarpdf,adaptmdl)
     if idist < adt_boundary:
       adaptmdl[imdl] = mdlupdate(adaptmdl[imdl],tarpdf,adt_w) 
 
-  return adaptmdl 
+  #return adaptmdl 
 
 def clustering(indata,inlab,silmdl,cls_boundary,w_update):
   clsmdl = silmdl[:] # initial model
@@ -83,8 +85,9 @@ def clustering(indata,inlab,silmdl,cls_boundary,w_update):
   newlab = numpy.max(inlab) + 1
   
   for inx in range(len(indata)):
-    tarpdf = indata[inx]
-    idist, imdl = multisenonedist(tarpdf,clsmdl)
+    #tarpdf = indata[inx]
+    idist = 0; imdl = 0
+    idist, imdl = multisenonedist(indata[inx],clsmdl)
     if idist < cls_boundary:
       # update datalab if datalab is empty (initial 0)
       if datalab[inx] == 0:
@@ -92,24 +95,31 @@ def clustering(indata,inlab,silmdl,cls_boundary,w_update):
 
       # update model if i_model is not silence model (fix silmdl)
       if not clslab[imdl] == -1:
-        clsmdl[imdl] = mdlupdate(clsmdl[imdl],tarpdf,w_update)
+        clsmdl[imdl] = mdlupdate(clsmdl[imdl],indata[inx],w_update)
 
     else:
-      clsmdl.append(tarpdf)
+      clsmdl.append(indata[inx])
       if datalab[inx] == 0:
         clslab.append(newlab)
         datalab[inx] = newlab
         newlab += 1
       else:
         clslab.append(datalab[inx])
+
           
   return datalab
 
 def detectdf(inlab,df_min_state,df_min_frame):
   dfregion = [0 for _ in range(len(inlab))]
+  
+  deltaprob = float(1/float(len(inlab)))
+  epsilon = float(deltaprob*deltaprob)
+  dfprob = [epsilon for _ in range(len(inlab))]  
+  grad = -1
+  preprob = dfprob[0]
 
   maxinx = numpy.max(inlab)
-  print 'max index of label : %d\n' %(maxinx)
+  #print 'max index of label : %d\n' %(maxinx)
   # 2D array (0=silence)
   tranmat = numpy.zeros((maxinx+1,maxinx+1))
   
@@ -127,21 +137,24 @@ def detectdf(inlab,df_min_state,df_min_frame):
 
   regbuf = []
   statbuf = []
+  
   for i in range(len(inlab)):
     ilab = inlab[i]
-    if ilab == -1:
+    if ilab == -1: # silence
       dfregion[i] = -1
       ilab = prevlab
     else:
       nextlab = ilab
       path = tranmat[prevlab,nextlab]
-      if path == 1:
+      if path == 1: # rep path
         regbuf.append(i)
         if not statbuf[-1:] == ilab:
           statbuf.append(ilab)
-      else:
+        if not prevlab == 0 and not prevlab == nextlab:
+          grad = 1 # gradient
+          
+      else: # new path
         if len(statbuf) >= df_min_state and len(regbuf) >= df_min_frame:
-          print statbuf
           for dfreg in regbuf: 
             dfregion[dfreg] = 1
         regbuf = []
@@ -149,9 +162,25 @@ def detectdf(inlab,df_min_state,df_min_frame):
         statbuf = []
         statbuf.append(ilab)
         tranmat[prevlab,nextlab] = 1
+        grad = -1 # gradient
    
     prevlab = ilab
-  return dfregion
+    dfprob[i] = float(preprob + (grad)*deltaprob)
+    if dfprob[i] < epsilon:
+      dfprob[i] = epsilon
+    preprob = dfprob[i]
+
+  """
+  plt.subplot(211)
+  plt.plot(dfregion)
+
+  plt.subplot(212)
+  plt.plot(dfprob)
+    
+  plt.show()
+  """    
+
+  return dfregion,dfprob
 
 def merge_dsflab(dsflab1,dsflab2,offset):
   out_dsflab = dsflab1[:]
@@ -163,14 +192,20 @@ def merge_dsflab(dsflab1,dsflab2,offset):
     out_dsflab[i] += offset
   return out_dsflab
 
+def merge_dsfprob(dsfprob1,dsfprob2):
+  for i in range(len(dsfprob1)):
+    dsfprob1[i] += dsfprob2[i]
+  return dsfprob1
+
 def run_cluster(data):
 
   # hyper parameter
   winsize = 400 # winsize * 10ms
   winshift = 100
-  w_update = 0.9 # cluster update weight
+  w_update = 0.8 # cluster update weight
   cls_boundary = 5
-  silpdf = [0,39,40]
+  # silpdf = [0,39,40] # timit
+  silpdf = [0,39,40] # etri_nonnative_adv
   peak_silmdl = 0.7
   adaptsil = True
 
@@ -181,12 +216,15 @@ def run_cluster(data):
   #f_dsflab = [ 0 for _ in range(len(data))] # forward clustering
   #b_dsflab = [ 0 for _ in range(len(data))] # backward clustering
   dsflab = [ 0 for _ in range(len(data))]
-  #reflab = [ 0 for _ in range(len(data))]
+  dsfprob = [ 0 for _ in range(len(data))]
 
-  # make reference using manual tagging
+  
+  ## make reference using manual tagging ######################
+  #reflab = [ 0 for _ in range(len(data))]
   #for ref_slice in myseg.seg_slice_ref():
   #  seg_ref = [ 1 for _ in range(len(reflab[ref_slice]))]
   #  reflab[ref_slice] = seg_ref 
+  ##############################################################
   
   # make silence model (index: 0~2)
   silmdl = []
@@ -194,24 +232,34 @@ def run_cluster(data):
     silmdl.append(makesilmodel(len(data[0]),peak_silmdl,i))
   
   if adaptsil:
-    silmdl = adaptsilmodel(data,silmdl)
+    #print "adaptive silence model...",
+    #ad_time = time.time() 
+    #silmdl = adaptsilmodel(data,silmdl)
+    adaptsilmodel(data,silmdl)
+    #print "%0.2f sec" %(time.time()-ad_time)
 
-  segments = segment_generator(len(data),winsize,winshift)
+ 
+  segments = segment_generator(len(data),winsize,winshift) 
+  tcost = time.time()
   for inx, seg_slice in enumerate(segments):
-    seg_clslab = clustering(data[seg_slice],clslab[seg_slice],silmdl,cls_boundary,w_update)
-    clslab[seg_slice] = seg_clslab
-    f_dsflab = detectdf(clslab[seg_slice],df_min_state,df_min_frame) # forward search
-    tmp_dsflab = detectdf(clslab[seg_slice][::-1],df_min_state,df_min_frame) # backward search
+    f_dsflab = [];   d_dsflab = [];    tmp_dsflab = [];    merged_dsflab = []
+    seg_time = time.time()
+    clslab[seg_slice] = clustering(data[seg_slice],clslab[seg_slice],silmdl,cls_boundary,w_update)
+
+    #clslab[seg_slice] = seg_clslab
+    f_dsflab, tmpf_dfprob = detectdf(clslab[seg_slice],df_min_state,df_min_frame) # forward search
+    tmp_dsflab,tmp_dfprob = detectdf(clslab[seg_slice][::-1],df_min_state,df_min_frame) # backward search
     b_dsflab = tmp_dsflab[::-1]
+    b_dfprob = tmp_dfprob[::-1]
+    
     offset = 0 #numpy.max(seg_clslab)/2
     merged_dsflab = merge_dsflab(f_dsflab,b_dsflab,offset) # merge dsf
     dsflab[seg_slice] = merge_dsflab(dsflab[seg_slice],merged_dsflab,offset) # merge dsf
-  
-  #plt.plot(reflab,'r')
-  #plt.hold(True)
-  #plt.plot(dsflab,'k--')
-  #plt.show()
+    #dsfprob[seg_slice] = merge_dsfprob(dsfprob[seg_slice],b_dfprob) # merge dsf prob
 
+  print "time cost : %0.2f min" % ((time.time()-tcost)/60) 
+
+   
   return dsflab
   
  

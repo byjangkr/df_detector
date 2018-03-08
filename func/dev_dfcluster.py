@@ -2,10 +2,13 @@
 # difluency detector using clustering
 import numpy
 import matplotlib.pyplot as plt
-from func import imgoperator as imop
+import imgoperator as imop
 import time
+import kaldi_io as kalIO
 
-#from func import tmp_mysegment as myseg # for my experience
+from swalignmod import swalign
+import tmp_mysegment as myseg # for my experience
+import dfio
 
 def kldivergence(pdf1,pdf2):
 # compute Kullback and Leibler divergence (symmetrised)
@@ -197,6 +200,123 @@ def merge_dsfprob(dsfprob1,dsfprob2):
     dsfprob1[i] += dsfprob2[i]
   return dsfprob1
 
+########################## dev ##############################
+def interior_angle(vec1,vec2):
+ # compute interior angle between vector1 and vector2
+ # cosA = (vec1*vec2)/|vec1||vec2|
+
+  if not len(vec1) == len(vec2):
+    raise IOError("error!!! do not match the sizes of input - %d = %d \n" % (len(pdf1), len(pdf2)))
+
+  inprod = 0
+  absvec1 = 0
+  absvec2 = 0
+  for i in range(len(vec1)):
+    inprod = inprod + float(vec1[i])*float(vec2[i])
+    absvec1 += float(vec1[i])*float(vec1[i])
+    absvec2 += float(vec2[i])*float(vec2[i])
+
+  ang = inprod/(numpy.sqrt(absvec1)*numpy.sqrt(absvec2))
+    
+  return ang
+
+def run_kl(data):
+
+  kllist = []
+  anglist = []
+  prepdf = data[0]
+
+
+  
+  """
+  for inx in range(1,len(data)):
+  #  kllist.append(kldivergence(prepdf,data[inx]))
+    anglist.append(interior_angle(prepdf,data[inx]))
+    #prepdf = data[inx]
+
+
+  # make reference using manual tagging ######################
+  reflab = [ 0 for _ in range(len(data))]
+  for ref_slice in myseg.seg_slice_ref():
+    seg_ref = [ 1 for _ in range(len(reflab[ref_slice]))]
+    reflab[ref_slice] = seg_ref 
+  #############################################################
+
+  tframe = range(0,len(data))
+  exseg = myseg.seg_slice_dsf(4)
+  plt.plot(tframe[exseg],anglist[exseg],'bo')
+  plt.hold(True)
+  plt.plot(tframe[exseg],reflab[exseg],'r')
+  plt.show()
+  """
+
+def run_greedy_cluster(data):
+  winsize = 400
+  silpdf = [0,39,40] # etri_nonnative_adv
+  peak_silmdl = 0.7
+  w_update = 0.8 # cluster update weight
+  adaptsil = True
+
+  # make silence model (index: 0~2)
+  silmdl = []
+  for i in silpdf:
+    silmdl.append(makesilmodel(len(data[0]),peak_silmdl,i))
+
+  if adaptsil:
+    print "adaptive silence model... %0.2f -> " %(silmdl[0][0]),
+    ad_time = time.time() 
+    adaptsilmodel(data,silmdl)
+    print "%0.2f : %0.2f sec" %(silmdl[0][0],(time.time()-ad_time))
+  
+  clsmdl = []
+  clsmdlinx = []
+  clslabel = []
+  icls = 0
+  
+  data = data[slice(0,2200,1)]
+  clstime = time.time()
+  print "start clustering ... "
+  for i in range(len(data)-1):
+    if len(clsmdlinx) > winsize: # limited size
+      clsmdlinx = clsmdlinx[slice(1,len(clsmdlinx),1)]
+      if not len(clsmdlinx) == winsize:
+        print "Error!!! not match No.cluster index and winsize"
+        raise
+    
+    if len(clsmdlinx) > 0:
+      begclsinx = clsmdlinx[0]       
+    else :
+      begclsinx = 0
+
+    tmpmdl = silmdl[:]
+    tmpmdl.extend(clsmdl[slice(begclsinx,len(clsmdl),1)]) # select cluster
+    Di = kldivergence(data[i],data[i+1])
+    Dk, imdl = multisenonedist(data[i],tmpmdl)
+    #if Di > Dk:
+    if 5 > Dk:
+      if imdl > (len(silmdl)-1): # no silence
+        imdl = imdl - len(silmdl)
+        clsmdl[imdl] = mdlupdate(clsmdl[imdl],data[i],w_update)
+        clsmdlinx.append(imdl)
+        clslabel.append(imdl)
+      else: # silence
+        clsmdlinx.append(icls)
+        clslabel.append(-1)
+    else: # new cluster
+      clsmdl.append(data[i])
+      clsmdlinx.append(icls)
+      clslabel.append(icls)
+      icls += 1
+
+  print " done!! %0.2f min" %(float(time.time()-clstime)/60)
+
+  return clslabel
+    
+    
+    
+  
+
+#############################################################
 def run_cluster(data):
 
   # hyper parameter
@@ -234,17 +354,20 @@ def run_cluster(data):
   if adaptsil:
     #print "adaptive silence model...",
     #ad_time = time.time() 
-    #silmdl = adaptsilmodel(data,silmdl)
-    adaptsilmodel(data,silmdl)
+    silmdl = adaptsilmodel(data,silmdl)
     #print "%0.2f sec" %(time.time()-ad_time)
 
+  #plt.plot(silmdl[0])
+  #plt.show()
  
-  segments = segment_generator(len(data),winsize,winshift) 
-  tcost = time.time()
+  """
+  segments = segment_generator(len(data),winsize,winshift)
   for inx, seg_slice in enumerate(segments):
     f_dsflab = [];   d_dsflab = [];    tmp_dsflab = [];    merged_dsflab = []
     seg_time = time.time()
     clslab[seg_slice] = clustering(data[seg_slice],clslab[seg_slice],silmdl,cls_boundary,w_update)
+    cls_time = time.time()
+    print inx, "cluster time : %0.2f" % (cls_time-seg_time)
 
     #clslab[seg_slice] = seg_clslab
     f_dsflab, tmpf_dfprob = detectdf(clslab[seg_slice],df_min_state,df_min_frame) # forward search
@@ -255,12 +378,106 @@ def run_cluster(data):
     offset = 0 #numpy.max(seg_clslab)/2
     merged_dsflab = merge_dsflab(f_dsflab,b_dsflab,offset) # merge dsf
     dsflab[seg_slice] = merge_dsflab(dsflab[seg_slice],merged_dsflab,offset) # merge dsf
-    #dsfprob[seg_slice] = merge_dsfprob(dsfprob[seg_slice],b_dfprob) # merge dsf prob
+    dsfprob[seg_slice] = merge_dsfprob(dsfprob[seg_slice],b_dfprob) # merge dsf prob
 
-  print "time cost : %0.2f min" % ((time.time()-tcost)/60) 
 
-   
-  return dsflab
+    #print inx, "seg time : %0.2f" % (time.time()-seg_time)
+  """  
+
+  seg_time = time.time()
+  seg_slice = slice(0,len(data),1)
+  clslab[seg_slice] = clustering(data[seg_slice],clslab[seg_slice],silmdl,cls_boundary,w_update)
+  cls_time = time.time()
+  print "cluster time : %0.2f" % (cls_time-seg_time)
+
+    #clslab[seg_slice] = seg_clslab
+  f_dsflab, tmpf_dfprob = detectdf(clslab[seg_slice],df_min_state,df_min_frame) # forward search
+  tmp_dsflab,tmp_dfprob = detectdf(clslab[seg_slice][::-1],df_min_state,df_min_frame) # backward search
+  b_dsflab = tmp_dsflab[::-1]
+  b_dfprob = tmp_dfprob[::-1]
+    
+  offset = 0 #numpy.max(seg_clslab)/2
+  merged_dsflab = merge_dsflab(f_dsflab,b_dsflab,offset) # merge dsf
+  dsflab[seg_slice] = merge_dsflab(dsflab[seg_slice],merged_dsflab,offset) # merge dsf
+  dsfprob[seg_slice] = merge_dsfprob(dsfprob[seg_slice],b_dfprob) # merge dsf prob
+
   
- 
+  plt.plot(clslab,'ro')
+  
+  plt.subplot(211)
+  plt.plot(dsflab)
+  plt.subplot(212)
+  plt.plot(dsfprob)
+    
+  plt.show()
+  
+  return dsflab
+#################################################################################
+
+filename="../../asr/est/prb_timit/M_1_KGT_02.prb"
+spk_info, data = kalIO.read_feat(filename)
+data = data[0]
+
+
+# summation of all senone prob in a utterance
+sumdata = [ 0 for _ in range(len(data[0]))]
+for iframe in range(len(data)):
+  idata = data[iframe]
+  for inode in range(len(idata)):  
+    sumdata[inode] = float(sumdata[inode]) + float(idata[inode])
+
+# make mean senone prob
+udata = [ 0 for _ in range(len(data[0]))]
+for i in range(len(sumdata)):
+  udata[i] = sumdata[i]/float(len(data))
+
+# compute kl-divergence between mean senone prob and each senone prob
+udistlab = [ 0 for _ in range(len(data))]
+for iframe in range(len(data)):
+  idata = data[iframe]
+  udistlab[iframe] = kldivergence(idata,udata)
+
+
+clsnum = 48
+clslab = [ 0 for _ in range(len(data))]
+minnum = numpy.min(udistlab)
+maxnum = numpy.max(udistlab)
+print 'min :', minnum, 'max :', maxnum
+for i in range(len(clslab)):
+  clslab[i] = int((udistlab[i] - minnum)/(maxnum - minnum)*clsnum)
+
+
+df_min_state = 3
+df_min_frame = 5
+segnum = 5
+seg_slice = myseg.seg_slice_dsf(segnum)
+f_dsflab, tmpf_dfprob = detectdf(clslab[seg_slice],df_min_state,df_min_frame) # forward search
+
+# make reference using manual tagging ######################
+reflab = [ 0 for _ in range(len(data))]
+for ref_slice in myseg.seg_slice_ref():
+  seg_ref = [ 1 for _ in range(len(reflab[ref_slice]))]
+  reflab[ref_slice] = seg_ref 
+############################################################
+
+scoring = swalign.SimpleScoringMatrix()
+
+sw = swalign.LocalAlignment(scoring,gap_penalty=-0.0025,verbose=True)
+alignment = sw.align(clslab[seg_slice],clslab[seg_slice])
+alignment.dump()
+
+
+#plt.plot(f_dsflab)
+#plt.hold(True)
+#plt.plot(reflab[seg_slice],'r')
+#plt.plot(clslab[seg_slice],'ro')
+#plt.show()
+
+#dsflab=run_cluster(data[0])  
+#run_kl(data[0])
+#clslab = run_greedy_cluster(data[0])
+#dfio.savepckdata('tmp_clslab2',clslab)
+#clslab = dfio.loadpckdata('tmp_clslab2')
+#plt.plot(clslab,'ro')
+#plt.show()
 

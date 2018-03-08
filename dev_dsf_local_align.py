@@ -5,32 +5,65 @@ from func import kaldi_io as kalIO
 from func import dfcluster
 from func import dfio
 import time
+from func.swalignmod import swalign
+from func import tmp_mysegment as myseg
 
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("prb_file",help="input prb file name")
-parser.add_argument("dsf_file",help="output dsf file name")
+#parser = argparse.ArgumentParser()
+#parser.add_argument("prb_file",help="input prb file name")
+#parser.add_argument("dsf_file",help="output dsf file name")
 
-args=parser.parse_args()
+#args=parser.parse_args()
 
-spk_info, data = kalIO.read_feat(args.prb_file)
+#spk_info, data = kalIO.read_feat(args.prb_file)
 
-if len(spk_info)==1:
-  data = data[0]
-else:
-  print 'Warning!! multi speaker data'
+#if len(spk_info)==1:
+#  data = data[0]
+#else:
+#  print 'Warning!! multi speaker data'
 
 start_time = time.time()
 
-dsflab = dfcluster.run_cluster(data)
-dfio.savepckdata(args.dsf_file,dsflab)
+#dsflab = dfcluster.run_cluster(data)
+#dfio.savepckdata(args.dsf_file,dsflab)
+
+
+#seg1 = myseg.seg_slice_dsf(0)
+#segdata = data[seg1]
+
+#exstr='000BT0B2B000NTA00NTA0AY0HV3000'
+exstr='NTA00NTA00NTA0AY0HV3000'
+
+match = 2
+mismatch = -1
+scoring = swalign.MyScoringMatrix()
+#scoring = swalign.KlScoringMatrix()
+
+#sw = swalign.MyLocalAlignment(scoring,gap_penalty=-0.0025,verbose=True)  # you can also choose gap penalties, etc...
+sw = swalign.MyLocalAlignment(scoring,gap_penalty=-0.0025,verbose=True)
+alignment = sw.align(exstr,exstr)
+alignment.dump()
+
+
 
 end_time = time.time() - start_time
 print 'processing time of this utterance : %0.2f min' % (end_time/60)
 
-
 """
+exstr='000BT0B2B000NTA00NTA0AY0HV3000'
+
+match = 2
+mismatch = -1
+#scoring = swalign.NucleotideScoringMatrix(match, mismatch)
+scoring = swalign.NucleotideScoringMatrix()
+
+sw = swalign.LocalAlignment(scoring,gap_penalty=-1,verbose=True)  # you can also choose gap penalties, etc...
+alignment = sw.align(exstr,exstr)
+alignment.dump()
+
+
+
 import argparse
 from func import dfio
 import pickle

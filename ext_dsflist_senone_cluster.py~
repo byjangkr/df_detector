@@ -4,11 +4,13 @@ import argparse
 from func import kaldi_io as kalIO
 from func import dfcluster
 from func import dfio
+import time
 
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("prb_file",help="input prb file name")
+parser.add_argument("dsf_file",help="output dsf file name")
 
 args=parser.parse_args()
 
@@ -19,9 +21,13 @@ if len(spk_info)==1:
 else:
   print 'Warning!! multi speaker data'
 
+start_time = time.time()
+
 dsflab = dfcluster.run_cluster(data)
 dfio.savepckdata(args.dsf_file,dsflab)
 
+end_time = time.time() - start_time
+print 'processing time of this utterance : %0.2f' % (end_time/60)
 
 
 """

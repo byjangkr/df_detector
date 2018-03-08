@@ -9,7 +9,7 @@ def savepckdata(out_file,data):
   pickle.dump(data,pck)
   pck.close()
 
-def loadpckdat(in_file):
+def loadpckdata(in_file):
   print "load data -> ", in_file
   pck = open(in_file,'rb')
   data = pickle.load(pck)
